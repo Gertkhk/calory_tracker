@@ -1,8 +1,8 @@
 // Storage Controller
-const StorageCtrl = (function(){
+const StorageCtrl = (function() {
     // public methods
     return {
-        storeItem: function(item){
+        storeItem: function(item) {
             let items;
             // check if any items in ls
             if(localStorage.getItem('items') === null) {
@@ -20,20 +20,29 @@ const StorageCtrl = (function(){
                 localStorage.setItem('items', JSON.stringify(items));
             }
         },
-        getItemsFromStorage: function(){
+        getItemsFromStorage: function() {
             let items;
-            if(localStorage.getItem('items') === null){
+            if(localStorage.getItem('items') === null) {
                 items = [];
             } else {
                 items = JSON.parse(localStorage.getItem('items'));
             }
             return items;
-        }
+        }(),
+        changeItemFromStorage: function(id, newItem) {
+            if(localStorage.getItem("items") === null) {
+
+            } else {
+                let items;
+                items = JSON.parse(localStorage.getItem("items"))
+                items[id]=newItem
+                localStorage.setItem("items", JSON.stringify(items))
+            }
     }
-})();
+}})();
 
 // Item Controller
-const ItemCtrl = (function(){
+const ItemCtrl = (function() {
     // Item Constructor
     const Item = function(id, name, calories){
         this.id = id
@@ -48,14 +57,15 @@ const ItemCtrl = (function(){
             {id: 1, name: 'Cookie', calories: 400},
             {id: 2, name: 'Eggs', calories: 300},
         ],
-        total: 0
+        total: 0,
+        currentItem: null
     }
 
     return {
-        getItems: function(){
+        getItems: function() {
             return data.items
         },
-        addItem: function(name, calories){
+        addItem: function(name, calories) {
             let ID;
             // Create ID
             if(data.items.length > 0){
@@ -84,8 +94,14 @@ const ItemCtrl = (function(){
             // return total
             return data.total;
         },
-        logData: function(){
+        logData: function() {
             return data
+        },
+        changeName: function(name) {
+            this.name = name
+        },
+        changeCalorie: function(calories) {
+            this.calories = calories
         }
     }
 })();
@@ -99,7 +115,8 @@ const UICtrl = (function(){
         itemNameInput: '#item-name',
         itemCaloriesInput: '#item-calories',
         addBtn: '.add-btn',
-        totalCalories: '.total-calories'
+        totalCalories: '.total-calories',
+        updateBtn: '.update-btn'
     }
     return {
         populateItemList: function(items){
@@ -162,15 +179,17 @@ const App = (function(ItemCtrl, StorageCtrl, UICtrl){
         const UISelectors = UICtrl.getSelectors();
         // add item event
         document.querySelector(UISelectors.addBtn).addEventListener('click', itemAddSubmit);
+        document.querySelector("ul").addEventListener("click", itemMealUpdate);
+        document.querySelector(UISelectors.updateBtn).addEventListener("click", mealUpdate);
         // add document reload event
         document.addEventListener('DOMContentLoaded', getItemsFromStorage)
     }
     // item add submit function
-    const itemAddSubmit = function(event){
+    const itemAddSubmit = function(event) {
         // get form input from UI Controller
         const input = UICtrl.getItemInput()
         // check for name and calorie input
-        if (input.name !== '' && input.calories !== ''){
+        if (input.name !== '' && input.calories !== '') {
             const newItem = ItemCtrl.addItem(input.name, input.calories)
             // add item to UI items list
             UICtrl.addListItem(newItem)
@@ -184,6 +203,32 @@ const App = (function(ItemCtrl, StorageCtrl, UICtrl){
             UICtrl.clearInput();
         }
         event.preventDefault()
+        const itemMealUpdate = function(event){
+            const UISelectors = UICtrl.getSelectors()
+            if(event.target.className === "edit-item fa fa-pencil"){
+                document.querySelector(UISelectors.updateBtn).style.display= "inline"
+                document.querySelector(UISelectors.addBtn).style.display= "none"
+                // StorageCtrl.storeItem(newItem)
+                event.target.parentElement.parentElement.id = "item-update"
+            }
+        }
+        const mealUpdate = function(){
+            const input = UICtrl.getItemInput()
+            const UISelectors = UICtrl.getSelectors()
+            const newItem = ItemCtrl.addItem(input.name, input.calories)
+            if (input.name !== '' && input.calories !== '') {
+                const list = document.querySelector("#item-list")
+                var nodes = Array.from(list.children)
+                newID = nodes.indexOf(document.querySelector("#item-update"))
+                const updateItem =`<strong>${newItem.name}: </strong> <em>${newItem.calories} Calories</em> <a href="#" class="secondary-content"><i class="edit-item fa fa-pencil"></i></a>`
+                document.querySelector("#item-update").innerHTML = updateItem
+                document.querySelector("#item-update").id = `item-${newID}`
+                newItem.id = newID
+                StorageCtrl.changeItemFromStorage(newID, newItem)
+                document.querySelector(UISelectors.addBtn).style.display= "inline"
+                document.querySelector(UISelectors.updateBtn).style.display= "none"
+            }
+        }
     }
     // get items from storage
     const getItemsFromStorage = function(){
